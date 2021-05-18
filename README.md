@@ -161,6 +161,7 @@ The code is structured so that there are no chances for deadlock and also the re
 Thus, it is pretty clear how we manage to make a starve-free solution for the readers-writers problem with a FIFO semaphore. We can say that all processes will be handled in a FIFO manner. Readers will allow other readers in the queue to start reading with them but writers will block all other processes waiting in the queue from executing before it finishes. In this way, we can implement a reader-writer solution where no process will have to indefinitely wait leading to starvation.
 
 ## References:
-https://rfc1149.net/blog/2011/01/07/the-third-readers-writers-problem/
-https://en.wikipedia.org/wiki/Readers%E2%80%93writers_problem
-
+- https://rfc1149.net/blog/2011/01/07/the-third-readers-writers-problem/
+- https://en.wikipedia.org/wiki/Readers%E2%80%93writers_problem
+- Abraham Silberschatz, Peter B. Galvin, Greg Gagne - Operating System Concepts
+- https://arxiv.org/abs/1309.4507
