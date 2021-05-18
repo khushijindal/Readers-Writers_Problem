@@ -149,7 +149,7 @@ do{
 
 }while(1);
 ```
-## Explanation on its working:
+## Explanation of its working:
 The starve-free solution works on this method : Any number of readers can simultaneously read the data. The "rwt" semaphore ensures that only a single writer can access the critical section at any moment. Once a writer has come, no new process that comes after it can start reading, ensuring mutual exclusion. Also, when the first reader tries to access the critical section it has to acquire the "r_mutex" lock to access the critical section thus ensuring mutual exclusion between the readers and writers. 
 
 Before accessing the critical section any reader or writer have to first acquire the "turn" semaphore which uses a FIFO queue for the blocked processes. Thus as the queue uses a FIFO policy, every process has to wait for a finite amount of time before it can access the critical section thus meeting the requirement of bounded waiting. This ensures that any new process that comes after this (be it reader or writer) will be queued up on "turn".
