@@ -7,6 +7,8 @@
 
 ## Fundamental Concept:
 #### Give neither priority: all readers and writers will be granted access to the resource in their order of arrival. If a writer arrives while readers are accessing the resource, it will wait until those readers free the resource, and then modify it. New readers arriving in the meantime will have to wait.
+
+## Semaphore:
 #### The solution thus proposed, uses Semaphores following a First-In-First-Out strategy to provide access control of the resource to either readers or writers.
 
-##
+## 
