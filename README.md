@@ -28,7 +28,8 @@ void wait(Semaphore *S,int* process_id)
   {
   S->Q->push(process_id);
   block(); //This function will block the proccess until it's woken up.
-           //The process will remain in the waiting queue till it is waken up by the wakeup() system calls
+           //The process will remain in the waiting queue 
+           //till it is waken up by the wakeup() system calls
            //This is a type of non-busy waiting
   }
 }
@@ -82,7 +83,7 @@ struct FIFO_Queue
     
 }
 
-// A Process Block.
+// Process Control Block (Node for Queue)
 struct ProcessBlock{
     ProcessBlock* next;
     int* process_block;
@@ -101,4 +102,51 @@ Semaphore rwt = new Semaphore();         //Semaphore required to access the crit
 Semaphore r_mutex = new Semaphore();     //Semaphore required to change the read_count variable
 ```
 
+### Reader Process Code:
+Following is the code for the reader process :
+```cpp
+do{
+//<ENTRY SECTION>
+       wait(turn,process_id);              //waiting for its turn to get executed
+       wait(r_mutex,process_id);           //requesting access to change read_count
+       read_count++;                       //update the number of readers trying to access critical section 
+       if(read_count==1)                   // if it is the first reader then request access to critical section
+         wait(rwt);                        //requesting  access to the critical section for readers
+       signal(turn);                       //releasing turn so that the next reader or writer can take the token
+                                           //and can be serviced
+       signal(r_mutex);                    //release access to the read_count
+       
+//<CRITICAL SECTION>
+       
+//<EXIT SECTION>
+       wait(r_mutex,process_id)            //requesting access to change read_count         
+       read_count--;                       //a reader has finished executing critical section so read_count decrease by 1
+       if(read_count==0)                   //if all the reader have finished executing their critical section
+        signal(rwt);                       //releasing access to critical section for next reader or writer
+       signal(r_mutex);                    //release access to the read_count  
+       
+//<REMAINDER SECTION>
+       
+}while(1);
+```
+### Writers Process Code:
+Following is the code for the writer process :
+```cpp
+do{
+//<ENTRY SECTION>
+      wait(turn,process_id);              //waiting for its turn to get executed
+      wait(rwt,process_id);               //requesting  access to the critical section
+      signal(turn,process_id);            //releasing turn so that the next reader or writer can take the token
+                                          //and can be serviced
+                                          
+//<CRITICAL SECTION>
+//Write the data in this "critical section"
 
+//<EXIT SECTION>
+      signal(rwt)                         //releasing access to critical section for next reader or writer
+
+//<REMAINDER SECTION>
+
+}while(1);
+```
+## Documentation:
