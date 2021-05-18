@@ -92,7 +92,7 @@ struct ProcessBlock{
 A FIFO semaphore is thus implemented. A queue is used to manage the waiting processes. The process gets blocked after pushing itself onto the queue and is woken up in FIFO order when some other process releases the semaphore.
 
 ### Initialization:
-The solution uses 3 semaphores. The <b>turn</b> semaphore is used to specify whose chance is to next enter the critical section. The process with this semaphore gets the next chance to enter the critical section. The <b>rwt</b> semaphore is required to access the critical section. <b>rmutex</b> semaphore is required to change the readcount variable which maintain the number of active readers.
+The solution uses three semaphores. The <b>turn</b> semaphore is used to specify whose chance is to next enter the critical section. The process with this semaphore gets the next chance to enter the critical section. The <b>rwt</b> semaphore is required to access the critical section. <b>rmutex</b> semaphore is required to change the readcount variable which maintain the number of active readers.
 ```cpp
 int read_count = 0;                      //Variable representing the number of readers 
                                          //currently executing the critical section
