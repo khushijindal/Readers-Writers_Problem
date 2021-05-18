@@ -13,3 +13,11 @@ The solution thus proposed, uses Semaphores following a First-In-First-Out strat
 
 ### Initialization:
 The solution uses 3 semaphores. The <b>turn</b> semaphore is used to specify whose chance is to next enter the critical section. The process with this semaphore gets the next chance to enter the critical section. The <b>rwt</b> semaphore is required to access the critical section. <b>rmutex</b> semaphore is required to change the readcount variable which maintain the number of active readers.
+```cpp
+int read_count = 0;                      //Variable representing the number of readers 
+                                         //currently executing the critical section
+Semaphore turn = new Semaphore();        //Semaphore representing the order in which the writers and 
+                                         //readers are requesting access to critical section
+Semaphore rwt = new Semaphore();         //Semaphore required to access the critical section
+Semaphore r_mutex = new Semaphore();     //Semaphore required to change the read_count variable
+```
