@@ -14,11 +14,13 @@ The solution thus proposed, uses Semaphores following a First-In-First-Out strat
 ### Code for defining Semaphore with FIFO strategy:
 
 ```cpp
+//SEMAPHORE
 
 // Process Control Block (Node for Queue)
-struct ProcessBlock{
-    ProcessBlock* next;
-    int* process_block;
+struct Process
+{
+    Process* next;
+    int* id;
     bool state = true; 
     //  state represents whether the process is blocked or active
     //  true represents active while false represents inactive(blocked)
@@ -27,15 +29,19 @@ struct ProcessBlock{
 }
 
 //Queue which will allow us to form a FIFO semaphore
-struct FIFO_Queue
+//Implementing basic queue functions push() and pop()
+struct Queue
 {
-    ProcessBlock* front, rear;
+    Process* front, rear;
     
     int* pop()
     {
-        if(front == NULL){
-            return -1;            // Underflow.
+        // Underflow
+        if(front == NULL)
+        {
+            return -1;            
         }
+        
         else{
             int* val = front->value;
             front = front->next;
@@ -49,8 +55,8 @@ struct FIFO_Queue
     
     void* push(int* val)
     {
-        ProcessBlock* blk = new ProcessBlock();
-        blk->value = val;
+        Process* blk = new Process();
+        blk->id = val;
         blk->state = false;   
           //  the process is blocked before pushing into the blockedQueue
           //  in reality this is done using system calls
@@ -69,11 +75,13 @@ struct FIFO_Queue
     
 }
 
-//Semaphore following FIFO strategy.
+// Semaphore following FIFO strategy
+// structure of the semaphore, as you can see we have linked it to a queue
+// this queue would store the list of proessess waiting to acquire the semaphore
 struct Semaphore
 {
   int value = 1;
-  FIFO_Queue* Q = new FIFO_Queue();
+  Queue* Q = new Queue();
 }
  
 //wait()
@@ -82,17 +90,16 @@ void wait(Semaphore *S,int* process_id)
   S->value--;
   if(S->value < 0)
   {
-  S->Q->push(process_id);
-  block(); 
-  //This function will block the proccess until it's woken up.
-  //The process will remain in the waiting queue 
-  //till it is waken up by the wakeup() system calls
-  //This is a type of non-busy waiting
+     S->Q->push(id); 
+     //This function will block the proccess until it's woken up.
+     //The process will remain in the waiting queue 
+     //till it is waken up by the wakeup() system calls
+     //This is a type of non-busy waiting
   }
 }
 
 //Analogous of wakeup() system call
-void wakeup(ProcessBlock* p) {
+void wakeup(Process* p) {
     p->state = true;
 }
 //  In reality, a system call is used instead of this function
@@ -103,8 +110,8 @@ void signal(Semaphore *S)
 {
   S->value++;
   if(S->value <= 0){
-  int* PID = S->Q->pop();
-  wakeup(PID); 
+  int* next_process = S->Q->pop();
+  wakeup(next_process); 
   //this function will wakeup the process with the given pid using system calls
   }
 }
@@ -125,15 +132,18 @@ Semaphore turn = new Semaphore();
 //Semaphore representing the order in which the writers and 
 //readers are requesting access to critical section
 
-Semaphore rwt = new Semaphore();         
+Semaphore write_mutex = new Semaphore();         
 //Semaphore required to access the critical section
+//by the writer for mutual exclusion
 
-Semaphore r_mutex = new Semaphore();     
+Semaphore read_mutex = new Semaphore();     
 //Semaphore required to change the read_count variable
+//this variable prevents the conflicts while changing the read_count variable
+//conflicts might have arose when two readers access the variable simulataneously
 ```
 
 ### Reader Process Code:
-Following is the code for the reader process :
+Following is the code for the reader process. I have made a function for modularising the implementation. This function would be called in a when any new process asking for reading access to the critical section arrives.
 ```cpp
 //Reader Code 
 // this function would be called everytime a new reader arrives
@@ -143,7 +153,7 @@ do{
        wait(turn,process_id);              
        //waiting for its turn to get executed
        
-       wait(r_mutex,process_id);           
+       wait(read_mutex,process_id);           
        //requesting access to change read_count
        
        read_count++;                       
@@ -152,19 +162,19 @@ do{
        // if it is the first reader then request access to critical section
        //requesting  access to the critical section for readers
        if(read_count==1)                   
-         wait(rwt);
+         wait(write_mutex);
          
        signal(turn);                      
        //releasing turn so that the next reader or writer can take the token
        //and can be serviced
        
-       signal(r_mutex);                    
+       signal(read_mutex);                    
        //release access to the read_count
        
 //<CRITICAL SECTION>
        
 //<EXIT SECTION>
-       wait(r_mutex,process_id)            
+       wait(read_mutex,process_id)            
        //requesting access to change read_count 
        
        read_count--;                       
@@ -173,9 +183,9 @@ do{
        //if all the reader have finished executing their critical section
        //releasing access to critical section for next reader or writer
        if(read_count==0)                   
-        signal(rwt);
+        signal(write_mutex);
         
-       signal(r_mutex);                    
+       signal(read_mutex);                    
        //release access to the read_count  
        
 //<REMAINDER SECTION>
@@ -183,14 +193,14 @@ do{
 }while(1);
 ```
 ### Writers Process Code:
-Following is the code for the writer process :
+Following is the code for the writer process. The writer code that would be called every time a new writer arrives.
 ```cpp
 do{
 //<ENTRY SECTION>
       wait(turn,process_id);              
       //waiting for its turn to get executed
       
-      wait(rwt,process_id);               
+      wait(write_mutex,process_id);               
       //requesting  access to the critical section
          
 //<CRITICAL SECTION>
@@ -201,7 +211,7 @@ do{
       //releasing turn so that the next reader or writer can take the token
       //and can be serviced
                                        
-      signal(rwt)                        
+      signal(write_mutex)                        
       //releasing access to critical section for next reader or writer
 
 //<REMAINDER SECTION>
@@ -209,11 +219,11 @@ do{
 }while(1);
 ```
 ## Explanation of its working:
-The starve-free solution works on this method : Any number of readers can simultaneously read the data without any issue. The "rwt" semaphore ensures that only a single writer can access the critical section at any moment. Once a writer has come, no new process that comes after it can start reading, ensuring mutual exclusion. Also, when the first reader tries to access the critical section it has to acquire the "r_mutex" lock to access the critical section thus ensuring mutual exclusion between the readers and writers. 
+The starve-free solution works on this method : Any number of readers can simultaneously read the data without any issue. The "write_mutex" semaphore ensures that only a single writer can access the critical section at any moment. Once a writer has come, no new process that comes after it can start reading, ensuring mutual exclusion. Also, when the first reader tries to access the critical section it has to acquire the "read_mutex" lock to access the critical section thus ensuring mutual exclusion between the readers and writers. 
 
 Before accessing the critical section any reader or writer have to first acquire the "turn" semaphore which uses a FIFO queue for the blocked processes. Thus as the queue uses a FIFO policy, every process has to wait for a finite amount of time before it can access the critical section thus meeting the requirement of bounded waiting. This ensures that any new process that comes after this (be it reader or writer) will be queued up on "turn".
 
-Suppose processes come as RRRWRWRRR. Now, by our method the first three readers will first read. Then, when the next process which is a writer takes the turn semaphore, it won't give it up until it's done. Also, it acquires the "rwt" semaphore. Now, suppose by the time this writer is done writing, the next writer has already arrived. However, it will be queued up on the turn semaphore. Thus, it won't get to start writing before the process before it, the reader process has completed. Thus, the reader process will get done and then the writer process will again block any more processes from starting and so on.
+Suppose processes come as RRRWRWRRR. Now, by our method the first three readers will first read. Then, when the next process which is a writer takes the turn semaphore, it won't give it up until it's done. Also, it acquires the "write_mutex" semaphore. Now, suppose by the time this writer is done writing, the next writer has already arrived. However, it will be queued up on the turn semaphore. Thus, it won't get to start writing before the process before it, the reader process has completed. Thus, the reader process will get done and then the writer process will again block any more processes from starting and so on.
 
 The code is structured so that there are no chances for deadlock and also the readers and writers takes a finite amount of time to pass through the critical section and also at the end of each reader writer code they release the semaphore for other processes to enter into critical section.
 
