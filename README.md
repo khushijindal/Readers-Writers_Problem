@@ -14,37 +14,16 @@ The solution thus proposed, uses Semaphores following a First-In-First-Out strat
 ### Code for defining Semaphore with FIFO strategy:
 
 ```cpp
-//Semaphore following FIFO strategy.
-struct Semaphore
-{
-  int value = 1;
-  FIFO_Queue* Q = new FIFO_Queue();
-}
-    
-void wait(Semaphore *S,int* process_id)
-{
-  S->value--;
-  if(S->value < 0)
-  {
-  S->Q->push(process_id);
-  block(); 
-  //This function will block the proccess until it's woken up.
-  //The process will remain in the waiting queue 
-  //till it is waken up by the wakeup() system calls
-  //This is a type of non-busy waiting
-  }
-}
-    
-void signal(Semaphore *S)
-{
-  S->value++;
-  if(S->value <= 0){
-  int* PID = S->Q->pop();
-  wakeup(PID); 
-  //this function will wakeup the process with the given pid using system calls
-  }
-}
+// Process Control Block (Node for Queue)
+struct ProcessBlock{
+    ProcessBlock* next;
+    int* process_block;
+    bool state = true; 
+    //  state represents whether the process is blocked or active
+    //  true represents active while false represents inactive(blocked)
 
+    //  also other things maybe present here, like the return address, subprocesses, etc
+}
 
 //Queue which will allow us to form a FIFO semaphore
 struct FIFO_Queue
@@ -85,11 +64,39 @@ struct FIFO_Queue
     
 }
 
-// Process Control Block (Node for Queue)
-struct ProcessBlock{
-    ProcessBlock* next;
-    int* process_block;
+//Semaphore following FIFO strategy.
+struct Semaphore
+{
+  int value = 1;
+  FIFO_Queue* Q = new FIFO_Queue();
 }
+ 
+//wait()
+void wait(Semaphore *S,int* process_id)
+{
+  S->value--;
+  if(S->value < 0)
+  {
+  S->Q->push(process_id);
+  block(); 
+  //This function will block the proccess until it's woken up.
+  //The process will remain in the waiting queue 
+  //till it is waken up by the wakeup() system calls
+  //This is a type of non-busy waiting
+  }
+}
+  
+//signal()  
+void signal(Semaphore *S)
+{
+  S->value++;
+  if(S->value <= 0){
+  int* PID = S->Q->pop();
+  wakeup(PID); 
+  //this function will wakeup the process with the given pid using system calls
+  }
+}
+
 ```
 A FIFO semaphore is thus implemented. A queue is used to manage the waiting processes. The process gets blocked after pushing itself onto the queue and is woken up in FIFO order when some other process releases the semaphore.
 
