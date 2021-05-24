@@ -8,12 +8,13 @@ The Readers-Writers Problem is well-known in computer science. A resource can be
 ## Fundamental Concept:
 Give neither priority: all readers and writers will be granted access to the resource in their order of arrival. If a writer arrives while readers are accessing the resource, it will wait until those readers free the resource, and then modify it. New readers arriving in the meantime will have to wait.
 
-## Approach Used: Semaphore
+## Approach Used: Semaphores
 The solution thus proposed, uses Semaphores following a First-In-First-Out strategy to provide access control of the resource to either readers or writers.
 
 ### Code for defining Semaphore with FIFO strategy:
 
 ```cpp
+
 // Process Control Block (Node for Queue)
 struct ProcessBlock{
     ProcessBlock* next;
@@ -50,6 +51,10 @@ struct FIFO_Queue
     {
         ProcessBlock* blk = new ProcessBlock();
         blk->value = val;
+        blk->state = false;   
+          //  the process is blocked before pushing into the blockedQueue
+          //  in reality this is done using system calls
+            
         if(rear == NULL)
         {
             front = rear = n;
@@ -85,7 +90,14 @@ void wait(Semaphore *S,int* process_id)
   //This is a type of non-busy waiting
   }
 }
-  
+
+//Analogous of wakeup() system call
+void wakeup(ProcessBlock* p) {
+    p->state = true;
+}
+//  In reality, a system call is used instead of this function
+//  I have used this function as an analogy of the syscall
+
 //signal()  
 void signal(Semaphore *S)
 {
@@ -123,6 +135,9 @@ Semaphore r_mutex = new Semaphore();
 ### Reader Process Code:
 Following is the code for the reader process :
 ```cpp
+//Reader Code 
+// this function would be called everytime a new reader arrives
+
 do{
 //<ENTRY SECTION>
        wait(turn,process_id);              
@@ -177,15 +192,15 @@ do{
       
       wait(rwt,process_id);               
       //requesting  access to the critical section
-      
-      signal(turn,process_id);            
-      //releasing turn so that the next reader or writer can take the token
-      //and can be serviced
-                                          
+         
 //<CRITICAL SECTION>
 //Write the data in this "critical section"
 
 //<EXIT SECTION>
+      signal(turn,process_id);            
+      //releasing turn so that the next reader or writer can take the token
+      //and can be serviced
+                                       
       signal(rwt)                        
       //releasing access to critical section for next reader or writer
 
